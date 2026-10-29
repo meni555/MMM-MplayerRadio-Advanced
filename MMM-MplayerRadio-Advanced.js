@@ -1,12 +1,12 @@
 /* global Module
 
 /* MagicMirror²
- * Module: MplayerRadio
+ * Module: MplayerRadio-Advanced (fork of MMM-MplayerRadio)
  *
  * By Tom Hirschberger
  * MIT Licensed.
  */
-Module.register('MMM-MplayerRadio', {
+Module.register('MMM-MplayerRadio-Advanced', {
 
   /**
    * By default, we should try to make the configuration match the demo
@@ -25,10 +25,11 @@ Module.register('MMM-MplayerRadio', {
     scrollableStations: false,
     stationsBeforeAndAfter: 1,
     scrollToActiveStation: true,
-    missingLogoUrl: "./MMM-MplayerRadio/radio-freepnglogos.png",
+    missingLogoUrl: "./MMM-MplayerRadio-Advanced/radio-freepnglogos.png",
     previousIcon: "ic-round-skip-previous",
     playIcon: "ic-round-play-arrow",
     stopIcon: "ic-round-stop",
+    pauseIcon: "ic-round-pause",
     nextIcon: "ic-round-skip-next",
     volUpIcon: "bi-volume-up-fill",
     volDownIcon: "bi-volume-down-fill",
@@ -38,6 +39,12 @@ Module.register('MMM-MplayerRadio', {
     autoplay: null,
     initStation: null,
     stopOnSuspend: false,
+    // External sources (Spotify Connect / YouTube Music cast) as carousel entries
+    externalSources: ["youtube", "spotify"],
+    showExternalWhenIdle: true,
+    externalNames: { youtube: "YouTube Music", spotify: "Spotify" },
+    externalIcons: { youtube: "simple-icons:youtubemusic", spotify: "simple-icons:spotify" },
+    externalControl: { youtube: "http://127.0.0.1:8099", spotify: "http://127.0.0.1:3678" },
   },
 
   /**
@@ -45,11 +52,124 @@ Module.register('MMM-MplayerRadio', {
    */
   getStyles() {
     if (this.config.scrollableStations){
-      return ['mplayer-radio.css', 'mplayer-radio-scroll.css'];
+      return ['mplayer-radio.css', 'mplayer-radio-scroll.css', 'mplayer-radio-external.css'];
     } else {
-      return ['mplayer-radio.css'];
+      return ['mplayer-radio.css', 'mplayer-radio-external.css'];
+    }
+  },
+
+  // ---------- external sources ----------
+  // The carousel shows radio stations (numeric ids, = index in config.stations) followed by
+  // external sources ("ext:youtube", "ext:spotify"). While an external source plays it is selected.
+  displayKey() {
+    return this.external ? "ext:" + this.external.source : this.curStationIndex
+  },
+
+  externalPaths: {
+    youtube: { pause: "/pause", resume: "/resume", next: "/next", previous: "/previous", stop: "/stop" },
+    spotify: { pause: "/player/pause", resume: "/player/resume", next: "/player/next", previous: "/player/prev", stop: "/player/pause" },
+  },
+
+  externalCommand(source, action) {
+    const base = (this.config.externalControl || {})[source]
+    const path = (this.externalPaths[source] || {})[action]
+    if (!base || !path) return
+    fetch(base + path, { method: "POST", mode: "no-cors" }).catch(() => {})
+  },
+
+  // radio starts -> stop YouTube, pause Spotify (the sound card would play both in parallel)
+  stopExternal() {
+    this.external = null
+    this.externalCommand("youtube", "stop")
+    this.externalCommand("spotify", "pause")
+  },
+
+  getCarouselKeys() {
+    const self = this
+    const keys = []
+    for (let curId = 0; curId < self.config.stations.length; curId++) {
+      if ((typeof self.config.stations[curId].profiles === 'undefined') ||
+          (self.currentProfilePattern.test(self.config.stations[curId].profiles))) {
+        keys.push(curId)
+      }
+    }
+    for (const source of self.config.externalSources || []) {
+      const active = self.external && self.external.source === source
+      if (active || self.config.showExternalWhenIdle) keys.push("ext:" + source)
+    }
+    return keys
+  },
+
+  getCarouselItemDom(key) {
+    return (typeof key === "string" && key.startsWith("ext:"))
+      ? this.getExternalItemDom(key.substring(4))
+      : this.getStationDomObject(key)
+  },
+
+  getExternalItemDom(source) {
+    const self = this
+    const ext = (self.external && self.external.source === source) ? self.external : null
+    const name = (self.config.externalNames || {})[source] || source
+    const selected = self.displayKey() === "ext:" + source
+
+    const wrapper = document.createElement("div")
+    wrapper.className = "station external " + source + (ext ? " active" : " idle") +
+      (selected ? " selected " + (ext && ext.playing ? "playing" : "stopped") : " unselected")
+    if (selected) self.activeStation = wrapper
+    if (ext) {
+      wrapper.addEventListener("click", () => { self.externalCommand(source, ext.playing ? "pause" : "resume") })
     }
 
+    const inner = document.createElement("div")
+    inner.className = "innerWrapper"
+
+    if (self.config.showLogos) {
+      const logoWrapper = document.createElement("div")
+      logoWrapper.className = "logoWrapper"
+      if (ext && ext.cover) {
+        const cover = document.createElement("img")
+        cover.className = "logo cover"
+        cover.src = ext.cover
+        cover.referrerPolicy = "no-referrer"
+        logoWrapper.appendChild(cover)
+      } else {
+        const icon = document.createElement("span")
+        icon.className = "iconify extIcon"
+        icon.setAttribute("data-icon", (self.config.externalIcons || {})[source] || "mdi:music")
+        icon.setAttribute("data-inline", "false")
+        logoWrapper.appendChild(icon)
+      }
+      inner.appendChild(logoWrapper)
+    }
+
+    const titleWrapper = document.createElement("div")
+    titleWrapper.className = "titleWrapper"
+    if (ext && selected) {
+      const text = document.createElement("div")
+      text.className = "extText"
+      const label = document.createElement("span")
+      label.className = "extSource"
+      label.textContent = name + (ext.playing ? "" : " · " + self.translate("PAUSED"))
+      const title = document.createElement("span")
+      title.className = "extTitle"
+      title.textContent = ext.title || ""
+      const artist = document.createElement("span")
+      artist.className = "extArtist"
+      artist.textContent = ext.artist || ""
+      text.appendChild(label); text.appendChild(title); text.appendChild(artist)
+      titleWrapper.appendChild(text)
+    } else if (self.config.showTitles) {
+      titleWrapper.textContent = name
+    }
+    inner.appendChild(titleWrapper)
+
+    wrapper.appendChild(inner)
+    return wrapper
+
+  },
+
+  getTranslations: function() {
+    return { en: "translations/en.json", de: "translations/de.json" }
   },
 
   getScripts: function() {
@@ -114,7 +234,7 @@ Module.register('MMM-MplayerRadio', {
       stationWrapper.addEventListener("click", ()=>{self.notificationReceived("RADIO_PLAY", {
         id: curId
       })})
-      if(self.curStationIndex === curId){
+      if(self.displayKey() === curId){
         self.activeStation = stationWrapper
         if(self.playing){
           stationWrapper.className = "station selected playing"
@@ -158,7 +278,9 @@ Module.register('MMM-MplayerRadio', {
     let streamInfoWrapper = document.createElement("div")
       streamInfoWrapper.className = "streamInfoWrapper"
 
-      if (self.curStreamInfo != null){
+      if (self.external){
+        streamInfoWrapper.innerHTML = "&nbsp;"
+      } else if (self.curStreamInfo != null){
         streamInfoWrapper.innerHTML = self.curStreamInfo
       } else {
         streamInfoWrapper.innerHTML = "&nbsp;"
@@ -185,7 +307,8 @@ Module.register('MMM-MplayerRadio', {
       let prevButtonWrapper = document.createElement("span")
         prevButtonWrapper.className = "previousButtonWrapper"
         prevButtonWrapper.addEventListener("click", ()=>{
-          self.notificationReceived("RADIO_PREVIOUS")
+          if (self.external) self.externalCommand(self.external.source, "previous")
+          else self.notificationReceived("RADIO_PREVIOUS")
         })
         let prevButton = document.createElement("span")
           prevButton.className = "button previousButton iconify"
@@ -194,7 +317,20 @@ Module.register('MMM-MplayerRadio', {
         prevButtonWrapper.appendChild(prevButton)
       controlWrapper.appendChild(prevButtonWrapper)
 
-      if(this.playing){
+      if (self.external){
+        const ext = self.external
+        let toggleWrapper = document.createElement("span")
+          toggleWrapper.className = ext.playing ? "stopButtonWrapper" : "playButtonWrapper"
+          toggleWrapper.addEventListener("click", ()=>{
+            self.externalCommand(ext.source, ext.playing ? "pause" : "resume")
+          })
+          let toggleButton = document.createElement("span")
+            toggleButton.className = "button iconify " + (ext.playing ? "pauseButton" : "playButton")
+            toggleButton.setAttribute("data-icon", ext.playing ? self.config.pauseIcon : self.config.playIcon)
+            toggleButton.setAttribute("data-inline", "false")
+          toggleWrapper.appendChild(toggleButton)
+        controlWrapper.appendChild(toggleWrapper)
+      } else if(this.playing){
         let stopButtonWrapper = document.createElement("span")
           stopButtonWrapper.className = "stopButtonWrapper"
           stopButtonWrapper.addEventListener("click", ()=>{self.notificationReceived("RADIO_STOP")})
@@ -224,7 +360,8 @@ Module.register('MMM-MplayerRadio', {
       let nextButtonWrapper = document.createElement("span")
         nextButtonWrapper.className = "nextButtonWrapper"
         nextButtonWrapper.addEventListener("click", ()=>{
-          self.notificationReceived("RADIO_NEXT")
+          if (self.external) self.externalCommand(self.external.source, "next")
+          else self.notificationReceived("RADIO_NEXT")
         })
         let nextButton = document.createElement("span")
           nextButton.className = "button nextButton iconify"
@@ -260,35 +397,19 @@ Module.register('MMM-MplayerRadio', {
         let stationsWrapper = document.createElement("div")
           stationsWrapper.className = "stationsWrapper"
           if(self.config.showStations){
-            console.log("RADIO: Number of stations in this profile: "+self.getNumberOfStationsInCurrentProfile())
-            if (self.config.scrollableStations || (self.getNumberOfStationsInCurrentProfile() < ((self.config.stationsBeforeAndAfter * 2)+1))){
-              for (let curId = 0; curId < self.config.stations.length; curId ++){
-                if(
-                  (typeof self.config.stations[curId].profiles === 'undefined') ||
-                  (self.currentProfilePattern.test(self.config.stations[curId].profiles))
-                ){
-                  stationsWrapper.appendChild(self.getStationDomObject(curId))
-                }
-
+            const keys = self.getCarouselKeys()
+            const around = self.config.stationsBeforeAndAfter
+            if (self.config.scrollableStations || (keys.length < ((around * 2)+1))){
+              for (const key of keys){
+                stationsWrapper.appendChild(self.getCarouselItemDom(key))
               }
             } else {
-              let stationBeforeIdx = self.curStationIndex
-              for(let i = 0; i < self.config.stationsBeforeAndAfter; i += 1){
-                stationBeforeIdx = self.getNextStationId(stationBeforeIdx, 1)
-              }
-
-              stationsWrapper.appendChild(self.getStationDomObject(stationBeforeIdx))
-              for (let i = 0; i < self.config.stationsBeforeAndAfter-1; i++){
-                stationBeforeIdx = self.getNextStationId(stationBeforeIdx, type=-1)
-                stationsWrapper.appendChild(self.getStationDomObject(stationBeforeIdx))
-              }
-
-              stationsWrapper.appendChild(self.getStationDomObject(self.curStationIndex))
-
-              let curNextId = self.getNextStationId(self.curStationIndex, type=-1)
-              for (let stationAfterIdx = 0; stationAfterIdx < self.config.stationsBeforeAndAfter; stationAfterIdx += 1){
-                stationsWrapper.appendChild(self.getStationDomObject(curNextId))
-                curNextId = self.getNextStationId(curNextId, type=-1)
+              // window of 2*around+1 entries centered on the selected one, wrapping around
+              let center = keys.indexOf(self.displayKey())
+              if (center < 0) center = 0
+              for (let offset = -around; offset <= around; offset++){
+                const key = keys[(center + offset + keys.length) % keys.length]
+                stationsWrapper.appendChild(self.getCarouselItemDom(key))
               }
             }
           }
@@ -403,6 +524,22 @@ Module.register('MMM-MplayerRadio', {
 
   notificationReceived: function(notification,payload) {
     const self = this
+    // external sources (Spotify / YouTube Music) report what they play
+    if (notification === "RADIO_EXTERNAL") {
+      if (payload && payload.active) {
+        self.external = payload
+      } else if (self.external && (!payload || payload.source === self.external.source)) {
+        self.external = null
+      }
+      self.updateDom(self.config.animationSpeed)
+      return
+    }
+    // radio starts (touch, remote control, ...) -> stop YouTube, pause Spotify;
+    // the sound card mixes streams, without this both would play at the same time
+    if (["RADIO_PLAY", "RADIO_NEXT", "RADIO_PREVIOUS"].includes(notification) ||
+        (notification === "RADIO_TOGGLE" && !self.playing)) {
+      self.stopExternal()
+    }
     if (notification === 'CHANGED_PROFILE'){
       if(typeof payload.to !== 'undefined'){
         console.log("Updating profile information to: "+payload.to)
@@ -466,6 +603,7 @@ Module.register('MMM-MplayerRadio', {
   socketNotificationReceived: function (notification, payload) {
     const self = this
     if(notification === "RADIO_PLAYING"){
+      this.external = null
       this.curStationIndex = payload.curStationIndex
       this.curStreamInfo = payload.curStreamInfo
       this.playing = true

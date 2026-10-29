@@ -1,0 +1,10 @@
+# compose.override.yaml for the karsten13/MagicMirror docker setup (https://gitlab.com/khassel/magicmirror):
+# builds an image with VLC for the radio. Put the Dockerfile from this folder into a directory of your choice
+# and set "context" below. pull_policy build: "docker compose up" builds from the cache in seconds and rebuilds
+# automatically on top of a new base image.
+services:
+  magicmirror:
+    image: mm-custom:latest
+    pull_policy: build
+    build:
+      context: /opt/mm/custom

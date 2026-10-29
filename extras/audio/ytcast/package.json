@@ -1,0 +1,11 @@
+{
+  "name": "mm-ytcast",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YouTube / YouTube Music cast receiver for MagicMirror² (mpv + yt-dlp)",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "yt-cast-receiver": "2.1.0"
+  }
+}

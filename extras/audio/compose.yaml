@@ -1,0 +1,35 @@
+name: mm-audio
+
+# Extra audio sources for MagicMirror² next to MMM-MplayerRadio-Advanced:
+#  - spotify: Spotify Connect (go-librespot), shows up in the Spotify app as "MagicMirror" (Premium needed)
+#  - ytcast:  "Cast to" target for YouTube / YouTube Music, shows up as "MagicMirror"
+# Both use the host network (mDNS/DIAL discovery in the LAN) and the sound card directly.
+# ytcast coordinates the sources: starting one stops/pauses the others and the radio.
+services:
+  spotify:
+    image: ghcr.io/devgianlu/go-librespot:v0.10.5
+    container_name: spotify
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - "29"            # audio group of the host (getent group audio)
+    volumes:
+      - ./spotify:/config
+
+  ytcast:
+    build: ./ytcast
+    image: mm-ytcast:local
+    container_name: ytcast
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - "29"
+    env_file: .env
+    volumes:
+      - ./ytcast-data:/data
+      # Docker hides /proc/asound; read-only from the host for the "is the sound card free?" check
+      - /proc/asound:/host-asound:ro

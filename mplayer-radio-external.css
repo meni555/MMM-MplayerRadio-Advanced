@@ -1,0 +1,81 @@
+/* External sources (YouTube Music / Spotify) as carousel entries.
+   Fixed px sizes: the module sets font-size/line-height 0 on its wrapper, em values would be invisible. */
+
+.MMM-MplayerRadio-Advanced .mradio .station.external .extIcon {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external.selected .extIcon {
+  width: 72px;
+  height: 72px;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external.youtube .extIcon { color: #ff0033; }
+.MMM-MplayerRadio-Advanced .mradio .station.external.spotify .extIcon { color: #1ed760; }
+
+/* idle sources are just a hint in the list */
+.MMM-MplayerRadio-Advanced .mradio .station.external.idle .innerWrapper { opacity: 0.55; }
+
+/* cover instead of a station logo */
+.MMM-MplayerRadio-Advanced .mradio .station.external .logo.cover {
+  width: 35px;
+  height: 35px;
+  object-fit: cover;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external.selected .logo.cover {
+  width: 110px;
+  height: 110px;
+  max-height: 110px;
+  border-radius: 8px;
+}
+
+/* selected + playing: source color instead of the radio blue */
+.MMM-MplayerRadio-Advanced .mradio .station.external.selected.playing.spotify .innerWrapper {
+  background: linear-gradient(90deg, rgba(30, 215, 96, 0.45), rgba(30, 215, 96, 0.12));
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external.selected.playing.youtube .innerWrapper {
+  background: linear-gradient(90deg, rgba(255, 0, 51, 0.45), rgba(255, 0, 51, 0.12));
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external .extText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external .extSource {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external.youtube .extSource { color: #ff8095; }
+.MMM-MplayerRadio-Advanced .mradio .station.external.spotify .extSource { color: #6ff0a0; }
+
+.MMM-MplayerRadio-Advanced .mradio .station.external .extTitle {
+  font-size: 22px;
+  line-height: 28px;
+  color: #fff;
+  max-width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.MMM-MplayerRadio-Advanced .mradio .station.external .extArtist {
+  font-size: 17px;
+  line-height: 22px;
+  color: #ddd;
+  max-width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

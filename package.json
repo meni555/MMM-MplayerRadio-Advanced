@@ -1,8 +1,8 @@
 {
-  "name": "MMM-MplayerRadio",
-  "version": "0.1.4",
-  "description": "A MagicMirror² module to play radio streams or music files on the mirror. The module can be controlled either by touch or by notifications.",
-  "main": "MMM-MplayerRadio.js",
+  "name": "MMM-MplayerRadio-Advanced",
+  "version": "1.0.0",
+  "description": "Radio for MagicMirror² with Spotify Connect and YouTube Music as entries in the station carousel (fork of MMM-MplayerRadio)",
+  "main": "MMM-MplayerRadio-Advanced.js",
   "dependencies": {
     "child_process": "latest"
   },
@@ -21,12 +21,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:Tom-Hirschberger/MMM-MplayerRadio.git"
+    "url": "git+https://github.com/meni555/MMM-MplayerRadio-Advanced.git"
   },
-  "author": "Thomas Hirschberger",
+  "author": "meni555",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Tom-Hirschberger/MMM-MplayerRadio/issues"
+    "url": "https://github.com/meni555/MMM-MplayerRadio-Advanced/issues"
   },
-  "homepage": "https://github.com/Tom-Hirschberger/MMM-MplayerRadio/#readme"
+  "homepage": "https://github.com/meni555/MMM-MplayerRadio-Advanced#readme",
+  "contributors": [
+    "Thomas Hirschberger (MMM-MplayerRadio)"
+  ]
 }

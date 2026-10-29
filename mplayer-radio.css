@@ -1,4 +1,4 @@
-.MMM-MplayerRadio .mradio.wrapper {
+.MMM-MplayerRadio-Advanced .mradio.wrapper {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -7,7 +7,7 @@
     line-height: 0px;
 }
 
-.MMM-MplayerRadio .mradio .stationsWrapper {
+.MMM-MplayerRadio-Advanced .mradio .stationsWrapper {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -19,19 +19,19 @@
     overflow: hidden;
 }
 
-.MMM-MplayerRadio .mradio .station {
+.MMM-MplayerRadio-Advanced .mradio .station {
     width: 100%;
     height: 45px;
     max-height: 45px;
     margin-top: 10px;
 }
 
-.MMM-MplayerRadio .mradio .station.selected {
+.MMM-MplayerRadio-Advanced .mradio .station.selected {
     height: 120px;
     max-height: 120px;
 }
 
-.MMM-MplayerRadio .mradio .station .innerWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station .innerWrapper {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -39,25 +39,25 @@
     height: 100%;
 }
 
-.MMM-MplayerRadio .mradio .station.selected .innerWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station.selected .innerWrapper {
     border-radius: 5px;
 }
 
-.MMM-MplayerRadio .mradio .station.selected.playing .innerWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station.selected.playing .innerWrapper {
     background-color: #425a85;
     border-radius: 5px;
 }
 
-.MMM-MplayerRadio .mradio .station.selected.stopped .innerWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station.selected.stopped .innerWrapper {
     background-color: #302f2d;
     border-radius: 5px;
 }
 
-.MMM-MplayerRadio .mradio .station .innerWrapper .titleWrapper{
+.MMM-MplayerRadio-Advanced .mradio .station .innerWrapper .titleWrapper{
     margin-left: 20px;
 }
 
-.MMM-MplayerRadio .mradio .station .logoWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station .logoWrapper {
     width: 150px;
     text-align: center;
     max-height: 45px;
@@ -66,36 +66,36 @@
     margin-bottom: 5px;
 }
 
-.MMM-MplayerRadio .mradio .station.selected .logoWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station.selected .logoWrapper {
     max-height: 120px;
 }
 
-.MMM-MplayerRadio .mradio .station .logo {
+.MMM-MplayerRadio-Advanced .mradio .station .logo {
     max-width: 150px;
     max-height: 35px;
     border-radius: 5px;
 }
 
-.MMM-MplayerRadio .mradio .station.selected .logo {
+.MMM-MplayerRadio-Advanced .mradio .station.selected .logo {
     max-height: 110px;
 }
 
-.MMM-MplayerRadio .mradio .station .titleWrapper {
+.MMM-MplayerRadio-Advanced .mradio .station .titleWrapper {
     font-size: 26px;
 }
 
-.MMM-MplayerRadio .mradio .streamInfoWrapper {
+.MMM-MplayerRadio-Advanced .mradio .streamInfoWrapper {
     min-height: 25px;
     font-size: 16px;
     margin-top: 25px;
 }
 
-.MMM-MplayerRadio .mradio .controlWrapper {
+.MMM-MplayerRadio-Advanced .mradio .controlWrapper {
     padding-top: 5px;
     width: 100%;
 }
 
-.MMM-MplayerRadio .mradio .controlWrapper .button {
+.MMM-MplayerRadio-Advanced .mradio .controlWrapper .button {
     height: 30px;
     width: 30px;
     margin-left: 5px;

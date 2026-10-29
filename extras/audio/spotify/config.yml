@@ -1,0 +1,26 @@
+# go-librespot - Spotify Connect (Premium needed). Docs: https://github.com/devgianlu/go-librespot
+# Adjust the sound card (aplay -l) and the network interface below.
+device_name: MagicMirror
+device_type: speaker
+audio_backend: alsa
+audio_device: plughw:CARD=Headphones,DEV=0
+# Volume directly on the ALSA control "PCM", the same one the radio and magicmirror-control use
+mixer_device: hw:CARD=Headphones
+mixer_control_name: PCM
+bitrate: 320
+volume_steps: 100
+initial_volume: 60
+zeroconf_enabled: true
+zeroconf_port: 37377
+# Announce only the LAN interface; otherwise a Docker bridge IP can end up in mDNS and phones cannot connect
+zeroconf_interfaces_to_advertise:
+  - wlan0
+credentials:
+  type: zeroconf
+  zeroconf:
+    persist_credentials: true
+# API for magicmirror-control (status, pause) and ytcast (coordination)
+server:
+  enabled: true
+  address: 0.0.0.0
+  port: 3678

@@ -6,9 +6,18 @@
  */
 const NodeHelper = require('node_helper')
 const spawn = require('child_process').spawn
+const execFileSync = require('child_process').execFileSync
+
+// Every connected browser with the mirror page forwards a notification to this helper, so with a
+// second client (phone, laptop) RADIO_PLAY arrives twice within a few ms. Same command within this
+// window is executed only once.
+const DUPLICATE_WINDOW_MS = 1500
+
 module.exports = NodeHelper.create({
 
   start: function () {
+    this.queue = Promise.resolve()
+    this.lastCommand = { key: null, at: 0 }
     this.started = false
     this.curStationIndex = 0;
     this.curStationProcess = null
@@ -235,6 +244,33 @@ module.exports = NodeHelper.create({
     self.stopStation(false)
   },
 
+  // run play/stop strictly one after another; parallel playStation calls both saw
+  // "nothing playing" and each started a player -> two streams
+  enqueue: function (task) {
+    const self = this
+    self.queue = self.queue.then(task).catch((err) => console.error(self.name + ": " + err))
+    return self.queue
+  },
+
+  isDuplicate: function (key) {
+    const now = Date.now()
+    const duplicate = this.lastCommand.key === key && (now - this.lastCommand.at) < DUPLICATE_WINDOW_MS
+    this.lastCommand = { key, at: now }
+    return duplicate
+  },
+
+  // safety net: VLC/mplayer processes that survived their wrapper (only the radio uses them here)
+  killStrayPlayers: function () {
+    for (const pattern of ["vlcWrapper\\.bash", "(^|/)vlc( |$)", "(^|/)mplayer( |$)"]) {
+      try {
+        execFileSync("pkill", ["-f", pattern], { stdio: "ignore" })
+        console.log(this.name + ": killed stray player processes matching " + pattern)
+      } catch (err) {
+        // exit code 1 = nothing matched
+      }
+    }
+  },
+
   socketNotificationReceived: function (notification, payload) {
     const self = this
     console.log(self.name + ': Received notification '+notification)
@@ -243,21 +279,40 @@ module.exports = NodeHelper.create({
       self.started = true
     } else if (notification === 'RADIO_PLAY'){
       console.log(self.name+": Received Play with payload: "+JSON.stringify(payload))
+      if (self.isDuplicate("PLAY:" + JSON.stringify(payload))) {
+        console.log(self.name + ": ignoring duplicate RADIO_PLAY (second client)")
+        return
+      }
+      let stationId = null
       if(typeof payload.id !== 'undefined'){
         if((payload.id >= 0) && (payload.id < self.config.stations.length)){
-          self.playStation(payload.id)
+          stationId = payload.id
         }
       } else if (typeof payload.title !== 'undefined'){
         for(var id in self.config.stations){
           if(payload.title === self.config.stations[id].title){
-            self.playStation(id)
+            stationId = id
           }
         }
       } else if (self.curStationIndex != null){
-        self.playStation(self.curStationIndex, 0)
+        stationId = self.curStationIndex
+      }
+      if (stationId !== null) {
+        self.enqueue(async () => {
+          await self.stopStation(false)
+          self.killStrayPlayers()
+          await self.playStation(stationId)
+        })
       }
     } else if (notification === 'RADIO_STOP'){
-      self.stopStation(true)
+      if (self.isDuplicate("STOP")) {
+        console.log(self.name + ": ignoring duplicate RADIO_STOP (second client)")
+        return
+      }
+      self.enqueue(async () => {
+        await self.stopStation(true)
+        self.killStrayPlayers()
+      })
     }
   }
 })
