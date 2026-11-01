@@ -14,6 +14,14 @@ Two services that run next to MagicMirror on the same device and use the same so
 Both tell the radio module what is playing (`RADIO_EXTERNAL` via MMM-Remote-Control) and coordinate:
 YouTube stops the radio and pauses Spotify, Spotify pauses YouTube and stops the radio, the radio stops both.
 
+> **Spotify limitation:** for some accounts and playback contexts (mostly playlists) Spotify refuses the audio key
+> to third-party Connect clients. The log then shows `failed retrieving aes key with code 1` and the player skips
+> track after track. This is decided server-side by Spotify and cannot be fixed in this project, see
+> [go-librespot #279](https://github.com/devgianlu/go-librespot/issues/279) and
+> [#317](https://github.com/devgianlu/go-librespot/issues/317). Workarounds: play a single track/album instead of a
+> playlist, try another account, or use YouTube Music.
+
+
 ### Setup
 
 ```bash
@@ -48,5 +56,9 @@ makes the setup use it. Copy the `Dockerfile` to a directory of your choice, set
 - `audio/`: Spotify-Connect-Lautsprecher und YouTube-/YouTube-Music-Cast-Ziel „MagicMirror“. Ordner kopieren,
   `.env` aus `.env.example` anlegen (`MM_TOKEN` = apiKey von MMM-Remote-Control, Soundkarte, Netzwerk),
   Soundkarte in `spotify/config.yml` eintragen, `docker compose up -d --build`.
+- Hinweis Spotify: Bei manchen Konten/Kontexten (meist Playlists) verweigert Spotify Drittanbieter-Clients den
+  Audio-Schlüssel (`failed retrieving aes key with code 1`), der Player springt dann Titel für Titel weiter. Das
+  entscheidet Spotify serverseitig (go-librespot #279/#317). Abhilfe: einzelnen Titel/Album statt Playlist, anderes
+  Konto oder YouTube Music.
 - `magicmirror-docker/`: MagicMirror-Image mit VLC, alsa-utils und Emoji-Schrift für das karsten13-Docker-Setup,
   damit nachinstallierte Pakete beim Neuerstellen des Containers nicht verloren gehen.
