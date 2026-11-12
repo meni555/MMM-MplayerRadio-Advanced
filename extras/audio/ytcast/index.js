@@ -247,8 +247,11 @@ class MpvPlayer extends Player {
     }
     if (ticket !== this.#loading) return false; // another title was requested meanwhile
     this.#current = { id: video.id, ...info, url: undefined };
-    const opts = position > 0 ? `start=${Math.floor(position)},` : '';
-    await this.#mpv.loadfile(info.url, `${opts}force-media-title=${info.title.replace(/,/g, ' ')}`);
+    // No force-media-title: nothing reads it, and mpv's option parser rejects values starting with " or [
+    // (e.g. "Heroes" or [Official Video]) -> loadfile fails, the previous title is already stopped, silence.
+    const opts = position > 0 ? `start=${Math.floor(position)}` : '';
+    try { await this.#mpv.loadfile(info.url, opts); }
+    catch (e) { log('[player] mpv cannot load', video.id, '-', e.message); throw e; }
     await this.#mpv.set('pause', false);
     log(`[player] playing: ${info.artist ? info.artist + ' - ' : ''}${info.title} (ready after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
     this.#prefetchNext();
