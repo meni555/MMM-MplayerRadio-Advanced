@@ -7,7 +7,7 @@
 //  - Playback uses ONE long-running mpv (JSON IPC) instead of a process per title.
 //  - Coordination: YouTube starting stops the radio (MagicMirror) and pauses Spotify; Spotify starting pauses YouTube.
 //  - Small status API (port 8099) for magicmirror-control and MMM-MplayerRadio-Advanced.
-import YouTubeCastReceiver, { Player, Constants, DataStore } from 'yt-cast-receiver';
+import YouTubeCastReceiver, { Player, Constants, DataStore, PlaylistRequestHandler, DefaultPlaylistRequestHandler } from 'yt-cast-receiver';
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { readFile, writeFile, rename } from 'node:fs/promises';
@@ -164,6 +164,36 @@ const mirror = {
   },
 };
 
+// ---------------------------------------------------------------- Queue navigation (previous / next title)
+// yt-cast-receiver asks YouTube (InnerTube /next, unauthenticated TV client) which title comes after the current one.
+// That fails for anything it cannot see without a login (own / private playlists, Liked Music, uploads) -> "no next
+// title" and playback stops after the first song. The phone already sends the complete list of video IDs with
+// setPlaylist/updatePlaylist, so previous/next come from that list. YouTube is only asked for what is not in the list:
+// the continuation after the last title (autoplay).
+class ListPlaylistRequestHandler extends PlaylistRequestHandler {
+  #fallback = new DefaultPlaylistRequestHandler();
+  setLogger(logger) { super.setLogger(logger); this.#fallback.setLogger(logger); }
+  reset() { this.#fallback.reset(); }
+  async getPreviousNextVideos(target, playlist) {
+    const ids = playlist.videoIds || [];
+    let i = target.context?.index;
+    if (!(i >= 0 && ids[i] === target.id)) i = ids.indexOf(target.id); // index missing or stale (list was edited)
+    if (i < 0) return this.#fromYouTube(target, playlist);
+    const at = (j) => (j >= 0 && j < ids.length ? { id: ids[j], client: target.client, context: { playlistId: playlist.id, index: j } } : null);
+    const result = { previous: at(i - 1), next: at(i + 1) };
+    // end of the list: only autoplay ("what comes next") needs YouTube, and only if the sender enabled it
+    if (!result.next && playlist.autoplayMode === Constants.AUTOPLAY_MODES.ENABLED) {
+      result.next = (await this.#fromYouTube(target, playlist)).next;
+    }
+    this.logger.debug(`[ytcast] queue ${i + 1}/${ids.length}: previous ${result.previous?.id ?? '-'}, next ${result.next?.id ?? '-'}`);
+    return result;
+  }
+  async #fromYouTube(target, playlist) {
+    try { return await this.#fallback.getPreviousNextVideos(target, playlist); }
+    catch (e) { log('[queue] YouTube lookup failed:', e.message); return { previous: null, next: null }; }
+  }
+}
+
 // ---------------------------------------------------------------- Player
 class MpvPlayer extends Player {
   #mpv; #resolver; #current = null; #loading = 0;
@@ -179,8 +209,19 @@ class MpvPlayer extends Player {
   async #trackEnded(why) {
     log('[player]', why, '->', this.#current?.id);
     this.#current = null;
-    await this.notifyExternalStateChange(Constants.PLAYER_STATUSES.STOPPED);
-    await this.next(); // next title from the queue or autoplay
+    try {
+      await this.notifyExternalStateChange(Constants.PLAYER_STATUSES.STOPPED);
+      const q = this.queue.getState();
+      log(`[player] queue: title ${(q.current?.context?.index ?? -1) + 1}/${q.videoIds.length}, next ${q.next?.id ?? '-'}, autoplay ${q.autoplay?.id ?? '-'} (${this.autoplayMode})`);
+      // next title from the queue or autoplay; a title that cannot be resolved (removed, region lock, ...) is skipped
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+          if (!(await this.next())) log('[player] end of the queue');
+          return;
+        } catch (e) { log(`[player] next title failed (attempt ${attempt}):`, e.message); }
+      }
+      await this.stop().catch(() => {}); // give up: otherwise the status stays on "loading"
+    } catch (e) { log('[player] advancing to the next title failed:', e.message); }
   }
   // Resolve the next AND the autoplay title while playing (yt-dlp needs ~7 s for a new title, the cache is instant)
   // -> only the first title of a cast session has to wait.
@@ -239,7 +280,7 @@ const player = new MpvPlayer(mpv, resolver);
 const receiver = new YouTubeCastReceiver(player, {
   device: { name: NAME, screenName: NAME, brand: 'MagicMirror', model: 'MagicMirror' },
   dial: { port: DIAL_PORT, bindToInterfaces: DIAL_IFACES },
-  app: { mutePolicy: Constants.MUTE_POLICIES.PRESERVE_VOLUME_LEVEL },
+  app: { mutePolicy: Constants.MUTE_POLICIES.PRESERVE_VOLUME_LEVEL, playlistRequestHandler: new ListPlaylistRequestHandler() },
   dataStore: new FileDataStore(),
   logLevel: Constants.LOG_LEVELS.INFO,
 });
