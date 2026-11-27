@@ -12,7 +12,8 @@ von Thomas Hirschberger.
 
 ## Neu gegenüber MMM-MplayerRadio
 
-- **Spotify Connect und YouTube Music im Karussell.** Läuft etwas über eine dieser Quellen, springt das Karussell
+- **Spotify Connect und YouTube Music im Karussell** (Spotify-Wiedergabe funktioniert derzeit nicht, siehe
+  [Bekannte Probleme](#bekannte-probleme)). Läuft etwas über eine dieser Quellen, springt das Karussell
   auf den Eintrag und zeigt Cover, Titel und Interpret; die Tasten des Moduls steuern dann diese Quelle
   (zurück / Pause-Weiter / vor). Endet die Wiedergabe, geht es zurück zum letzten Sender.
 - **Fertige Audio-Dienste** in [`extras/audio`](extras/README.md): ein Spotify-Connect-Lautsprecher (go-librespot)
@@ -25,6 +26,15 @@ von Thomas Hirschberger.
 - Übersetzungen (Deutsch, Englisch)
 
 Das Modul kann neben dem Original installiert werden, es hat einen eigenen Namen.
+
+## Bekannte Probleme
+
+- **🚧 Spotify-Wiedergabe funktioniert derzeit nicht – in Arbeit.** Das Abspielen über den Spotify-Connect-Lautsprecher
+  „MagicMirror“ (go-librespot aus [`extras/audio`](extras/README.md)) schlägt momentan fehl. Eine bekannte Ursache:
+  Bei manchen Konten/Kontexten (meist Playlists) verweigert Spotify Drittanbieter-Clients den Audio-Schlüssel, im Log
+  steht dann `failed retrieving aes key with code 1` (siehe
+  [go-librespot #279](https://github.com/devgianlu/go-librespot/issues/279) und
+  [#317](https://github.com/devgianlu/go-librespot/issues/317)). Bis das behoben ist: Radio oder YouTube Music nutzen.
 
 ## Installation
 
