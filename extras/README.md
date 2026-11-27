@@ -44,7 +44,8 @@ docker compose up -d --build
    and put it in `.env` as `SOLOIST_API_KEY=...`. Keep the key private.
 2. **Set `PUID` and `AUDIO_GID`** to the user whose PipeWire/PulseAudio session runs on the host:
    `PUID=$(id -u)`, `AUDIO_GID=$(getent group audio | cut -d: -f3)`. The `spotify-data` directory must belong to
-   that user (`chown -R "$PUID:$AUDIO_GID" spotify-data`).
+   that user (`chown -R "$PUID:$AUDIO_GID" spotify-data`). Existing installations: do **not** overwrite `.env`;
+   add the new variables and set `AUDIO_DEVICE=pulse`/`ALSA_CARD=` instead of the old ALSA values.
 3. **PipeWire or PulseAudio is required** by Soloist. Raspberry Pi OS Bookworm/Trixie ships it by default; check
    with `wpctl status` or `systemctl --user status pipewire`. If it is missing:
    `sudo apt install pipewire pipewire-pulse wireplumber`.
@@ -125,7 +126,8 @@ user (not via `sudo`) so `$HOME/.config/pulse` is the right cookie.
   YouTube-/YouTube-Music-Cast-Ziel „MagicMirror“. Ordner kopieren, `.env` aus `.env.example` anlegen
   (`MM_TOKEN`, `SOLOIST_API_KEY`, `PUID`, `AUDIO_GID`), `spotify-data` anlegen, `docker compose up -d --build`.
 - **API-Key:** <https://developer.spotify.com/dashboard/soloist> (einmalig Premium nötig). Danach können auch
-  Free-Konten verbinden. Der Key steht in `.env` (`chmod 600 .env`).
+  Free-Konten verbinden. Der Key steht in `.env` (`chmod 600 .env`). Bei bestehenden Installationen `.env` nicht
+  überschreiben, sondern die neuen Variablen ergänzen (`AUDIO_DEVICE=pulse`, `ALSA_CARD=`).
 - **PipeWire/PulseAudio ist Voraussetzung** (auf Raspberry Pi OS normalerweise vorhanden). `PUID` = `id -u` des
   Nutzers, in dessen Sitzung PipeWire läuft; `AUDIO_GID` = GID der Gruppe `audio`.
 - **Warum nicht go-librespot?** Spotify hat die alte Audio-Key-Schnittstelle für Drittanbieter-Clients abgeschaltet
