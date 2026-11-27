@@ -12,12 +12,13 @@ by Thomas Hirschberger.
 
 ## What is new compared to MMM-MplayerRadio
 
-- **Spotify Connect and YouTube Music in the carousel** (Spotify playback currently does not work, see
-  [Known issues](#known-issues)). When something plays through one of them, the carousel
-  jumps to that entry and shows cover, title and artist; the module buttons then control that source
-  (previous / pause-resume / next). When playback ends, the carousel returns to the last station.
+- **Spotify Connect and YouTube Music in the carousel.** Spotify playback uses **Spotify Soloist**, Spotify's
+  official headless client (see [Known issues](#known-issues) for why go-librespot no longer works). When something
+  plays through one of them, the carousel jumps to that entry and shows cover, title and artist; the module buttons
+  then control that source (previous / pause-resume / next). When playback ends, the carousel returns to the last
+  station.
 - **Ready-to-use audio services** in [`extras/audio`](extras/README.md): a Spotify Connect speaker
-  (go-librespot) and a "Cast to" target for YouTube / YouTube Music, both named "MagicMirror" in the apps.
+  (Spotify Soloist) and a "Cast to" target for YouTube / YouTube Music, both named "MagicMirror" in the apps.
   Starting one source stops the others, so the sound card never plays two things at once.
 - **Never two streams at the same time:** commands are processed one after another and duplicates are ignored.
   With a second browser showing the mirror page, MagicMirror delivers every command twice, which used to
@@ -30,12 +31,11 @@ The module can be installed next to the original one, it uses its own name.
 
 ## Known issues
 
-- **🚧 Spotify playback does not work at the moment – under work.** Playing through the Spotify Connect speaker
-  "MagicMirror" (go-librespot from [`extras/audio`](extras/README.md)) currently fails. One known cause: for some
-  accounts and playback contexts (mostly playlists) Spotify refuses the audio key to third-party Connect clients,
-  the log then shows `failed retrieving aes key with code 1` (see
-  [go-librespot #279](https://github.com/devgianlu/go-librespot/issues/279) and
-  [#317](https://github.com/devgianlu/go-librespot/issues/317)). Until this is fixed, use the radio or YouTube Music.
+- **Spotify needs Spotify Soloist.** Spotify switched off the legacy audio-key interface used by librespot,
+  spotifyd and go-librespot for many accounts (`audio key error 0 1` / `failed retrieving aes key with code 1`).
+  The [`extras/audio`](extras/README.md) setup therefore uses **Spotify Soloist**, Spotify's official headless
+  client, with a small bridge that keeps the old API. Soloist builds expire after 90 days; the container updates
+  the binary automatically. An internet connection is required for the first start and for updates.
 
 ## Installation
 
@@ -61,7 +61,7 @@ All other options and notifications stay the same. Custom CSS must use the class
 | `showExternalWhenIdle` | `true` | Show the sources as dimmed entries also while nothing plays through them |
 | `externalNames` | `{youtube: "YouTube Music", spotify: "Spotify"}` | Display names |
 | `externalIcons` | `simple-icons:youtubemusic` / `simple-icons:spotify` | [Iconify](https://icon-sets.iconify.design/) icons when there is no cover |
-| `externalControl` | `http://127.0.0.1:8099` / `http://127.0.0.1:3678` | Control APIs of ytcast and go-librespot (see extras) |
+| `externalControl` | `http://127.0.0.1:8099` / `http://127.0.0.1:3678` | Control APIs of ytcast and the Spotify Soloist bridge (see extras) |
 | `pauseIcon` | `ic-round-pause` | Icon of the pause button |
 
 ### Notification `RADIO_EXTERNAL`
@@ -82,7 +82,8 @@ station selection, volume and Spotify / YouTube Music controls.
 ## Credits
 
 Based on [MMM-MplayerRadio](https://github.com/Tom-Hirschberger/MMM-MplayerRadio) by Thomas Hirschberger (MIT).
-Spotify Connect: [go-librespot](https://github.com/devgianlu/go-librespot). YouTube cast:
+Spotify Connect: [Spotify Soloist](https://github.com/spotify/soloist) (official headless client) with a bridge;
+the previous implementation used [go-librespot](https://github.com/devgianlu/go-librespot). YouTube cast:
 [yt-cast-receiver](https://github.com/patrickkfkan/yt-cast-receiver), [yt-dlp](https://github.com/yt-dlp/yt-dlp), [mpv](https://mpv.io/).
 Licensed under the [MIT License](LICENSE).
 

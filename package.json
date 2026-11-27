@@ -1,7 +1,7 @@
 {
   "name": "MMM-MplayerRadio-Advanced",
-  "version": "1.0.0",
-  "description": "Radio for MagicMirror² with Spotify Connect and YouTube Music as entries in the station carousel (fork of MMM-MplayerRadio)",
+  "version": "1.1.0",
+  "description": "Radio for MagicMirror² with Spotify Connect (Spotify Soloist) and YouTube Music as entries in the station carousel (fork of MMM-MplayerRadio)",
   "main": "MMM-MplayerRadio-Advanced.js",
   "dependencies": {
     "child_process": "latest"

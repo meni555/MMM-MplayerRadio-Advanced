@@ -1,22 +1,45 @@
 name: mm-audio
 
 # Extra audio sources for MagicMirror² next to MMM-MplayerRadio-Advanced:
-#  - spotify: Spotify Connect (go-librespot), shows up in the Spotify app as "MagicMirror" (Premium needed)
+#  - spotify: Spotify Connect through Spotify Soloist, Spotify's official headless client
+#             (device "MagicMirror"), plus a small bridge that keeps the go-librespot API
 #  - ytcast:  "Cast to" target for YouTube / YouTube Music, shows up as "MagicMirror"
-# Both use the host network (mDNS/DIAL discovery in the LAN) and the sound card directly.
+# Both use the host network (mDNS/DIAL discovery in the LAN) and the host audio system.
 # ytcast coordinates the sources: starting one stops/pauses the others and the radio.
+#
+# Spotify Soloist needs PipeWire or PulseAudio. PUID must be the user whose audio session
+# runs on the host (usually 1000); see .env.example.
 services:
   spotify:
-    image: ghcr.io/devgianlu/go-librespot:v0.10.5
+    build: ./spotify
+    image: mm-spotify-soloist:local
     container_name: spotify
     restart: unless-stopped
+    init: true
     network_mode: host
-    devices:
-      - /dev/snd:/dev/snd
-    group_add:
-      - "29"            # audio group of the host (getent group audio)
+    # same UID/GID as the host user whose PipeWire/PulseAudio session is mounted below
+    user: "${PUID:-1000}:${AUDIO_GID:-29}"
+    environment:
+      SOLOIST_API_KEY: ${SOLOIST_API_KEY:-}
+      SOLOIST_DEVICE_NAME: ${SPOTIFY_NAME:-MagicMirror}
+      # PipeWire node name/ID; empty = default output
+      SOLOIST_AUDIO_DEVICE: ${SPOTIFY_AUDIO_DEVICE:-}
+      SOLOIST_INITIAL_VOLUME: ${SPOTIFY_INITIAL_VOLUME:-60}
+      SOLOIST_VERBOSE: ${SPOTIFY_VERBOSE:-0}
+      MM_URL: ${MM_URL:-http://127.0.0.1:8080}
+      MM_TOKEN: ${MM_TOKEN:-}
+      XDG_RUNTIME_DIR: /run/user/${PUID:-1000}
+      # PulseAudio (not PipeWire) needs the user's cookie; harmless with PipeWire
+      PULSE_COOKIE: /pulse/cookie
     volumes:
-      - ./spotify:/config
+      # Soloist state, cache and the auto-updated binary
+      - ./spotify-data:/data
+      # Host PipeWire / PulseAudio session (PUID = id -u of the desktop/mirror user)
+      - /run/user/${PUID:-1000}/pipewire-0:/run/user/${PUID:-1000}/pipewire-0
+      - /run/user/${PUID:-1000}/pulse:/run/user/${PUID:-1000}/pulse
+      - ${HOME}/.config/pulse:/pulse:ro
+    group_add:
+      - "${AUDIO_GID:-29}"
 
   ytcast:
     build: ./ytcast
@@ -27,9 +50,21 @@ services:
     devices:
       - /dev/snd:/dev/snd
     group_add:
-      - "29"
-    env_file: .env
+      - "${AUDIO_GID:-29}"
+    environment:
+      MM_URL: ${MM_URL:-http://127.0.0.1:8080}
+      MM_TOKEN: ${MM_TOKEN:-}
+      YTCAST_NAME: ${YTCAST_NAME:-MagicMirror}
+      AUDIO_DEVICE: ${AUDIO_DEVICE:-pulse}
+      ALSA_CARD: ${ALSA_CARD:-}
+      DIAL_INTERFACES: ${DIAL_INTERFACES:-wlan0,eth0}
+      SPOTIFY_API: ${SPOTIFY_API:-http://127.0.0.1:3678}
+      # mpv plays through the host PulseAudio/PipeWire session (AUDIO_DEVICE=pulse in .env)
+      PULSE_SERVER: unix:/run/user/${PUID:-1000}/pulse/native
+      PULSE_COOKIE: /pulse/cookie
     volumes:
       - ./ytcast-data:/data
       # Docker hides /proc/asound; read-only from the host for the "is the sound card free?" check
       - /proc/asound:/host-asound:ro
+      - /run/user/${PUID:-1000}/pulse:/run/user/${PUID:-1000}/pulse
+      - ${HOME}/.config/pulse:/pulse:ro
