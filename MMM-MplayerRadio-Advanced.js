@@ -39,7 +39,7 @@ Module.register('MMM-MplayerRadio-Advanced', {
     autoplay: null,
     initStation: null,
     stopOnSuspend: false,
-    // External sources (Spotify Connect / YouTube Music cast) as carousel entries
+    // External sources (Spotify Connect via Soloist / YouTube Music cast) as carousel entries
     externalSources: ["youtube", "spotify"],
     showExternalWhenIdle: true,
     externalNames: { youtube: "YouTube Music", spotify: "Spotify" },
@@ -527,6 +527,12 @@ Module.register('MMM-MplayerRadio-Advanced', {
     // external sources (Spotify / YouTube Music) report what they play
     if (notification === "RADIO_EXTERNAL") {
       if (payload && payload.active) {
+        // A paused source must not take over while the radio plays or another source is active.
+        // This happens when the radio pauses Spotify or YouTube pauses it in the background.
+        if (!payload.playing &&
+            (self.playing || (self.external && self.external.source !== payload.source))) {
+          return
+        }
         self.external = payload
       } else if (self.external && (!payload || payload.source === self.external.source)) {
         self.external = null

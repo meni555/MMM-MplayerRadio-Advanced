@@ -12,11 +12,12 @@ von Thomas Hirschberger.
 
 ## Neu gegenüber MMM-MplayerRadio
 
-- **Spotify Connect und YouTube Music im Karussell** (Spotify-Wiedergabe funktioniert derzeit nicht, siehe
-  [Bekannte Probleme](#bekannte-probleme)). Läuft etwas über eine dieser Quellen, springt das Karussell
-  auf den Eintrag und zeigt Cover, Titel und Interpret; die Tasten des Moduls steuern dann diese Quelle
-  (zurück / Pause-Weiter / vor). Endet die Wiedergabe, geht es zurück zum letzten Sender.
-- **Fertige Audio-Dienste** in [`extras/audio`](extras/README.md): ein Spotify-Connect-Lautsprecher (go-librespot)
+- **Spotify Connect und YouTube Music im Karussell.** Für Spotify läuft **Spotify Soloist**, der offizielle
+  Headless-Client von Spotify (warum go-librespot nicht mehr geht, siehe [Bekannte Probleme](#bekannte-probleme)).
+  Läuft etwas über eine dieser Quellen, springt das Karussell auf den Eintrag und zeigt Cover, Titel und Interpret;
+  die Tasten des Moduls steuern dann diese Quelle (zurück / Pause-Weiter / vor). Endet die Wiedergabe, geht es
+  zurück zum letzten Sender.
+- **Fertige Audio-Dienste** in [`extras/audio`](extras/README.md): ein Spotify-Connect-Lautsprecher (Spotify Soloist)
   und ein „Streamen auf“-Ziel für YouTube / YouTube Music, in den Apps jeweils als „MagicMirror“.
   Startet eine Quelle, werden die anderen gestoppt – die Soundkarte spielt nie zwei Dinge gleichzeitig.
 - **Nie zwei Streams gleichzeitig:** Befehle werden nacheinander abgearbeitet, doppelte ignoriert. Ist die
@@ -29,12 +30,11 @@ Das Modul kann neben dem Original installiert werden, es hat einen eigenen Namen
 
 ## Bekannte Probleme
 
-- **🚧 Spotify-Wiedergabe funktioniert derzeit nicht – in Arbeit.** Das Abspielen über den Spotify-Connect-Lautsprecher
-  „MagicMirror“ (go-librespot aus [`extras/audio`](extras/README.md)) schlägt momentan fehl. Eine bekannte Ursache:
-  Bei manchen Konten/Kontexten (meist Playlists) verweigert Spotify Drittanbieter-Clients den Audio-Schlüssel, im Log
-  steht dann `failed retrieving aes key with code 1` (siehe
-  [go-librespot #279](https://github.com/devgianlu/go-librespot/issues/279) und
-  [#317](https://github.com/devgianlu/go-librespot/issues/317)). Bis das behoben ist: Radio oder YouTube Music nutzen.
+- **Spotify braucht Spotify Soloist.** Spotify hat die alte Audio-Key-Schnittstelle für librespot, spotifyd und
+  go-librespot bei vielen Konten abgeschaltet (`audio key error 0 1` / `failed retrieving aes key with code 1`).
+  Das Setup in [`extras/audio`](extras/README.md) nutzt deshalb **Spotify Soloist**, den offiziellen Headless-Client
+  von Spotify, mit einer kleinen Bridge, die die alte API weiterführt. Soloist-Builds verfallen nach 90 Tagen; der
+  Container aktualisiert die Binary automatisch. Für den ersten Start und Updates wird Internet benötigt.
 
 ## Installation
 
@@ -60,7 +60,7 @@ Alle anderen Optionen und Notifications bleiben gleich. Eigenes CSS muss die Kla
 | `showExternalWhenIdle` | `true` | Quellen auch ohne Wiedergabe als gedimmte Einträge zeigen |
 | `externalNames` | `{youtube: "YouTube Music", spotify: "Spotify"}` | Anzeigenamen |
 | `externalIcons` | `simple-icons:youtubemusic` / `simple-icons:spotify` | [Iconify](https://icon-sets.iconify.design/)-Icons, wenn kein Cover da ist |
-| `externalControl` | `http://127.0.0.1:8099` / `http://127.0.0.1:3678` | Steuer-APIs von ytcast und go-librespot (siehe Extras) |
+| `externalControl` | `http://127.0.0.1:8099` / `http://127.0.0.1:3678` | Steuer-APIs von ytcast und der Spotify-Soloist-Bridge (siehe Extras) |
 | `pauseIcon` | `ic-round-pause` | Icon der Pause-Taste |
 
 ### Notification `RADIO_EXTERNAL`
@@ -81,6 +81,7 @@ Senderwahl, Lautstärke und Steuerung von Spotify / YouTube Music.
 ## Credits
 
 Basiert auf [MMM-MplayerRadio](https://github.com/Tom-Hirschberger/MMM-MplayerRadio) von Thomas Hirschberger (MIT).
-Spotify Connect: [go-librespot](https://github.com/devgianlu/go-librespot). YouTube-Cast:
+Spotify Connect: [Spotify Soloist](https://github.com/spotify/soloist) (offizieller Headless-Client) mit Bridge;
+vorher war [go-librespot](https://github.com/devgianlu/go-librespot) im Einsatz. YouTube-Cast:
 [yt-cast-receiver](https://github.com/patrickkfkan/yt-cast-receiver), [yt-dlp](https://github.com/yt-dlp/yt-dlp), [mpv](https://mpv.io/).
 Lizenz: [MIT](LICENSE).

@@ -1,10 +1,22 @@
 # compose.override.yaml for the karsten13/MagicMirror docker setup (https://gitlab.com/khassel/magicmirror):
-# builds an image with VLC for the radio. Put the Dockerfile from this folder into a directory of your choice
-# and set "context" below. pull_policy build: "docker compose up" builds from the cache in seconds and rebuilds
-# automatically on top of a new base image.
+# builds an image with VLC for the radio and gives the container access to the host PulseAudio/PipeWire
+# session, so the radio, Spotify Soloist and YouTube use the same mixer. Put the Dockerfile from this
+# folder into a directory of your choice and set "context" below. pull_policy build: "docker compose up"
+# builds from the cache in seconds and rebuilds automatically on top of a new base image.
+#
+# PUID must be the user whose audio session runs on the host (usually 1000). Run docker compose as that
+# user, not via sudo, because $HOME is used for the PulseAudio cookie.
 services:
   magicmirror:
     image: mm-custom:latest
     pull_policy: build
     build:
       context: /opt/mm/custom
+    environment:
+      PULSE_SERVER: unix:/run/user/${PUID:-1000}/pulse/native
+      PULSE_COOKIE: /pulse/cookie
+    group_add:
+      - "${AUDIO_GID:-29}"
+    volumes:
+      - /run/user/${PUID:-1000}/pulse:/run/user/${PUID:-1000}/pulse
+      - ${HOME}/.config/pulse:/pulse:ro
